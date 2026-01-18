@@ -7,14 +7,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-import argparse
 import math
 import os
 import pickle
 import time
 from typing import Optional
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -103,7 +101,6 @@ class SimParams:
     Display: DisplayConfig
     Files: FilesConfig
     Attenuate: AttenuationConfig
-    quick: bool = False
 
 
 class Infomax:
@@ -478,11 +475,6 @@ def init_sim_params(
 
     samples_config = SamplesConfig()
     steps = StepsConfig()
-    if quick:
-        steps.final_w_ilearn = 200
-        steps.tinnitus_ilearn = 400
-        steps.nlearn = 800
-        samples_config.step_samples = 10
     cost = CostConfig(err=np.zeros(steps.nlearn))
     time_cfg = TimeConfig()
     time_cfg.dur = np.zeros(time_cfg.n_mean_time)
@@ -504,7 +496,6 @@ def init_sim_params(
         Display=display,
         Files=files,
         Attenuate=attenuate,
-        quick=quick,
     )
 
 
@@ -547,24 +538,7 @@ def get_cost(sim_params: SimParams, samples: SamplesData) -> float:
     return sim_params.net.GetCost(samples.x[:, : sim_params.Cost.n_samp])
 
 
-def plot_cost_history(sim_params: SimParams, output_path: str) -> None:
-    costs = sim_params.Cost.err[: sim_params.Steps.ilearn]
-    steps = np.arange(1, len(costs) + 1)
-    plt.figure(figsize=(8, 4))
-    plt.plot(steps, costs, linewidth=1)
-    plt.xlabel("Learning step")
-    plt.ylabel("Cost")
-    plt.title("InfoMax cost history")
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=150)
-    plt.close()
-
-
-def run_auditory_model(
-    sim_params: SimParams,
-    samples: SamplesData,
-    plot_path: Optional[str] = None,
-) -> None:
+def run_auditory_model(sim_params: SimParams, samples: SamplesData) -> None:
     attenuated = False
     k_learn = False
 
@@ -635,34 +609,25 @@ def run_auditory_model(
         if (sim_params.Steps.ilearn - 1) % sim_params.Files.n_save == 0:
             save_sim_params(sim_params)
 
-    if plot_path:
-        plot_cost_history(sim_params, plot_path)
-
 
 def batch_sim(
     inputs: int = 40,
     outputs: int = 400,
     results_path: str = "Results",
-    quick: bool = False,
-    plot: bool = True,
 ) -> None:
-    if quick:
-        samples = get_samples(inputs, n_samples=2000)
-        ridge_values = np.array([0.12, 0.2, 0.25])
-    else:
-        samples = get_samples(inputs)
-        ridge_values = np.concatenate(
-            [
-                np.arange(0.1, 0.176, 0.005),
-                np.arange(0.176, 0.191, 0.001),
-                np.arange(0.195, 0.221, 0.005),
-                np.arange(0.221, 0.236, 0.001),
-                np.arange(0.24, 0.301, 0.01),
-            ]
-        )
+    samples = get_samples(inputs)
+    ridge_values = np.concatenate(
+        [
+            np.arange(0.1, 0.176, 0.005),
+            np.arange(0.176, 0.191, 0.001),
+            np.arange(0.195, 0.221, 0.005),
+            np.arange(0.221, 0.236, 0.001),
+            np.arange(0.24, 0.301, 0.01),
+        ]
+    )
 
     for ridge in ridge_values:
-        sim_params = init_sim_params(inputs, outputs, results_path, quick=quick)
+        sim_params = init_sim_params(inputs, outputs, results_path)
         sim_params.Files.filename = f"{sim_params.Files.filenamebeg}RidgeK_{ridge}_"
         sim_params.net.Rec_ridge = ridge
 
@@ -671,20 +636,8 @@ def batch_sim(
             sim_params = loaded
 
         save_sim_params(sim_params)
-        plot_path = None
-        if plot:
-            plot_path = os.path.join(
-                results_path,
-                f"cost_RidgeK_{ridge}.png",
-            )
-        run_auditory_model(sim_params, samples, plot_path=plot_path)
+        run_auditory_model(sim_params, samples)
 
 
 if __name__ == "__main__":
-    batch_sim(
-        inputs=40,
-        outputs=400,
-        results_path="Results",
-        quick=True,
-        plot=True,
-    )
+    batch_sim()
