@@ -43,6 +43,25 @@ Note that all figures' script make use of the results saved by the simulations.
 * Tested on Matlab R2020b.
 * Figures' scripts use [export_fig](https://www.mathworks.com/matlabcentral/fileexchange/23629-export_fig) to save the figures. 
 
+## Python translation (consolidated)
+The folder `python/infomax_simulation.py` contains a consolidated Python port of the MATLAB
+simulation pipeline, including the InfoMax network, input generation, attenuation, and
+batch simulation loop. It uses `pickle` for checkpointing and `numpy` for computation.
+Run it directly to execute the batch simulation with the default parameters:
+
+```
+python python/infomax_simulation.py
+```
+
+For a faster iteration that produces a small set of plots, use:
+
+```
+python python/infomax_simulation.py --quick
+```
+
+This writes cost history plots (PNG) to the `Results` folder by default. Use
+`--no-plot` to disable plotting.
+
 ## Notes
 * Typical runtimes are a 2-3 weeks per attenuation profile. 
 * All scripts (especially the simulation scripts) save intermediate results, which may take up to a few GB of storage altogether. 
