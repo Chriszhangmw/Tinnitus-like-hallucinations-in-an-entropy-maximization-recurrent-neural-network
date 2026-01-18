@@ -53,6 +53,15 @@ Run it directly to execute the batch simulation with the default parameters:
 python python/infomax_simulation.py
 ```
 
+For a faster iteration that produces a small set of plots, use:
+
+```
+python python/infomax_simulation.py --quick
+```
+
+This writes cost history plots (PNG) to the `Results` folder by default. Use
+`--no-plot` to disable plotting.
+
 ## Notes
 * Typical runtimes are a 2-3 weeks per attenuation profile. 
 * All scripts (especially the simulation scripts) save intermediate results, which may take up to a few GB of storage altogether. 

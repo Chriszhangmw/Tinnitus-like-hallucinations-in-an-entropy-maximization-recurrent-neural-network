@@ -428,20 +428,28 @@ def save_samples(samples: SamplesData) -> None:
         pickle.dump(samples, handle)
 
 
-def get_samples(inputs: int) -> SamplesData:
+def get_samples(inputs: int, n_samples: Optional[int] = None) -> SamplesData:
     samples, loaded = load_samples("Samples")
     if loaded and samples.x is not None:
-        return samples
+        if n_samples is None or samples.x.shape[1] == n_samples:
+            return samples
 
     input_gen = InputGenConfig()
     samples = SamplesData(filename="Samples")
+    if n_samples is not None:
+        samples.n_samples = n_samples
     samples.x = generate_input(inputs, samples.n_samples, input_gen)
     samples.n_samples = samples.x.shape[1]
     save_samples(samples)
     return samples
 
 
-def init_sim_params(inputs: int, outputs: int, results_path: str) -> SimParams:
+def init_sim_params(
+    inputs: int,
+    outputs: int,
+    results_path: str,
+    quick: bool = False,
+) -> SimParams:
     net_config = NetworkConfig()
     threshold = True
     ff_ridge = 0.001
